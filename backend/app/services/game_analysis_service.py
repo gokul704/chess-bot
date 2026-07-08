@@ -2,16 +2,18 @@ import chess
 import chess.pgn
 
 from app.services.stockfish_service import StockfishService
+from app.services.statistics_service import StatisticsService
 from app.utils.metrics import (
     calculate_centipawn_loss,
     classify_move,
 )
-
+from app.utils.accuracy import calculate_accuracy
 
 class GameAnalysisService:
 
     def __init__(self):
         self.stockfish = StockfishService()
+        self.statistics = StatisticsService()
 
     def analyze_game(self, path: str):
 
@@ -26,28 +28,28 @@ class GameAnalysisService:
 
         for move in game.mainline_moves():
 
-            # Current position before the move
+            # Position before move
             fen = board.fen()
 
-            # Rich analysis (best move, top moves)
+            # Best move analysis
             engine_analysis = self.stockfish.analyze_fen(fen)
 
-            # Raw evaluation before move
+            # Evaluation before move
             evaluation_before = self.stockfish.evaluate_fen(fen)
 
-            # Player makes the move
+            # Play move
             board.push(move)
 
-            # New position after move
+            # Evaluation after move
             evaluation_after = self.stockfish.evaluate_fen(board.fen())
 
-            # Calculate Centipawn Loss
+            # Calculate CPL
             cpl = calculate_centipawn_loss(
                 evaluation_before,
                 evaluation_after,
             )
 
-            # Classify move
+            # Classification
             classification = classify_move(cpl)
 
             analysis.append(
@@ -65,9 +67,20 @@ class GameAnalysisService:
 
             move_number += 1
 
+        # Calculate statistics AFTER all moves
+        statistics = self.statistics.calculate(analysis)
+        accuracy = calculate_accuracy(
+        statistics["average_centipawn_loss"]
+)
+
         return {
-            "white": game.headers["White"],
-            "black": game.headers["Black"],
-            "result": game.headers["Result"],
+            "summary": {
+                "white": game.headers["White"],
+                "black": game.headers["Black"],
+                "result": game.headers["Result"],
+                "total_moves": len(analysis),
+                "accuracy": accuracy,
+            },
+            "statistics": statistics,
             "moves": analysis,
         }
