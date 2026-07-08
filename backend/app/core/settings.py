@@ -1,15 +1,16 @@
-from pydantic_settings import BaseSettings
-from app.core.settings import settings
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class Settings(BaseSettings):
-    APP_NAME: str = "Chess Bot AI"
+    APP_NAME: str = "Chess Mentor AI"
     APP_VERSION: str = "0.1.0"
 
-self.engine = chess.engine.SimpleEngine.popen_uci(
-    settings.STOCKFISH_PATH
-)
-    class Config:
-        env_file = ".env"
+    STOCKFISH_PATH: str = "/opt/homebrew/bin/stockfish"
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        extra="ignore",
+    )
 
 
 settings = Settings()

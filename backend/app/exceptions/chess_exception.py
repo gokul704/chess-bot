@@ -1,0 +1,2 @@
+class InvalidFenException(Exception):
+    pass
