@@ -18,7 +18,7 @@ class StockfishService:
         Convert Stockfish score into a structured response.
         """
 
-        relative = score.relative
+        relative = score.pov(chess.WHITE)
 
         if relative.is_mate():
             return {
@@ -76,3 +76,29 @@ class StockfishService:
     def close(self):
         logger.info("Closing Stockfish engine")
         self.engine.quit()
+
+    def evaluate_fen(self, fen: str) -> int:
+        """
+        Returns the raw centipawn evaluation of a position.
+        Positive = White is better.
+        Negative = Black is better.
+        """
+
+        board = chess.Board(fen)
+
+        result = self.engine.analyse(
+            board,
+            chess.engine.Limit(depth=ENGINE_DEPTH),
+        )
+
+        score = result["score"].relative
+
+        if score.is_mate():
+            mate = score.mate()
+
+            if mate is None:
+                return 0
+
+            return 100000 if mate > 0 else -100000
+
+        return score.score()

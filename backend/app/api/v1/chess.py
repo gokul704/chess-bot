@@ -20,3 +20,9 @@ stockfish = StockfishService()
 )
 def analyze(request: AnalyzeFenRequest):
     return stockfish.analyze_fen(request.fen)
+
+@router.post("/evaluate")
+def evaluate(request: AnalyzeFenRequest):
+    return {
+        "cp": stockfish.evaluate_fen(request.fen)
+    }
