@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.v1.routes import router
+from app.api.v1.chess import router as chess_router
 
 app = FastAPI(
     title="Chess Bot AI",
@@ -16,6 +17,7 @@ app.add_middleware(
 )
 
 app.include_router(router, prefix="/api/v1")
+app.include_router(chess_router)
 # @app.get("/")
 # def root():
 #     return {"message": "Chess Mentor AI Backend Running"}
