@@ -20,10 +20,3 @@ app.add_middleware(
 app.include_router(router, prefix="/api/v1")
 app.include_router(chess_router)
 app.include_router(game_router)
-# @app.get("/")
-# def root():
-#     return {"message": "Chess Mentor AI Backend Running"}
-
-# @app.get("/health")
-# def health():
-#     return {"status": "healthy"}
