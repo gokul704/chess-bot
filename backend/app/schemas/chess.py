@@ -21,3 +21,9 @@ class AnalysisResponse(BaseModel):
     depth: int
     evaluation: Evaluation
     top_moves: list[CandidateMove]
+
+class GameSummary(BaseModel):
+    white: str
+    black: str
+    result: str
+    total_moves: int
