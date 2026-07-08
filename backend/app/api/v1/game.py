@@ -17,5 +17,8 @@ SAMPLE_GAME = BASE_DIR / "data" / "games" / "sample_game.pgn"
 
 
 @router.get("/sample")
-def analyze_sample_game():
-    return game_service.load_game(str(SAMPLE_GAME))
+def analyze_sample():
+
+    return game_service.analyze_game(
+        str(SAMPLE_GAME)
+    )
