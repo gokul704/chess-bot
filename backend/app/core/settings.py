@@ -7,6 +7,9 @@ class Settings(BaseSettings):
 
     STOCKFISH_PATH: str = "/opt/homebrew/bin/stockfish"
 
+    OLLAMA_URL: str = "http://localhost:11434"
+    OLLAMA_MODEL: str = "mistral"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         extra="ignore",

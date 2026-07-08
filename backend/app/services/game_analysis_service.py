@@ -3,17 +3,24 @@ import chess.pgn
 
 from app.services.stockfish_service import StockfishService
 from app.services.statistics_service import StatisticsService
+from app.services.opening_service import OpeningService
+from app.services.llm_service import LLMService
+
 from app.utils.metrics import (
     calculate_centipawn_loss,
     classify_move,
 )
+
 from app.utils.accuracy import calculate_accuracy
+
 
 class GameAnalysisService:
 
     def __init__(self):
         self.stockfish = StockfishService()
         self.statistics = StatisticsService()
+        self.opening = OpeningService()
+        self.llm = LLMService()
 
     def analyze_game(self, path: str):
 
@@ -26,24 +33,38 @@ class GameAnalysisService:
 
         move_number = 1
 
+        detected_opening = None
+
         for move in game.mainline_moves():
 
-            # Position before move
+            # -----------------------------
+            # Position BEFORE the move
+            # -----------------------------
             fen = board.fen()
 
-            # Best move analysis
+            # Engine analysis
             engine_analysis = self.stockfish.analyze_fen(fen)
 
             # Evaluation before move
             evaluation_before = self.stockfish.evaluate_fen(fen)
 
-            # Play move
+            # -----------------------------
+            # Play the move
+            # -----------------------------
             board.push(move)
+
+            # -----------------------------
+            # Detect opening AFTER move
+            # -----------------------------
+            opening = self.opening.detect_opening(board.fen())
+
+            if opening is not None:
+                detected_opening = opening
 
             # Evaluation after move
             evaluation_after = self.stockfish.evaluate_fen(board.fen())
 
-            # Calculate CPL
+            # Centipawn loss
             cpl = calculate_centipawn_loss(
                 evaluation_before,
                 evaluation_after,
@@ -52,26 +73,35 @@ class GameAnalysisService:
             # Classification
             classification = classify_move(cpl)
 
-            analysis.append(
-                {
-                    "move_number": move_number,
-                    "played_move": move.uci(),
-                    "fen": fen,
-                    "best_move": engine_analysis["best_move"],
-                    "evaluation_before": evaluation_before,
-                    "evaluation_after": evaluation_after,
-                    "centipawn_loss": cpl,
-                    "classification": classification,
-                }
-            )
+            move_entry = {
+                "move_number": move_number,
+                "played_move": move.uci(),
+                "fen": fen,
+                "best_move": engine_analysis["best_move"],
+                "evaluation_before": evaluation_before,
+                "evaluation_after": evaluation_after,
+                "centipawn_loss": cpl,
+                "classification": classification,
+            }
+
+            # Best moves need no coaching explanation
+            if classification != "Best":
+                move_entry["explanation"] = self.llm.explain_move(move_entry)
+            else:
+                move_entry["explanation"] = None
+
+            analysis.append(move_entry)
 
             move_number += 1
 
-        # Calculate statistics AFTER all moves
+        # -----------------------------
+        # Statistics
+        # -----------------------------
         statistics = self.statistics.calculate(analysis)
+
         accuracy = calculate_accuracy(
-        statistics["average_centipawn_loss"]
-)
+            statistics["average_centipawn_loss"]
+        )
 
         return {
             "summary": {
@@ -81,6 +111,7 @@ class GameAnalysisService:
                 "total_moves": len(analysis),
                 "accuracy": accuracy,
             },
+            "opening": detected_opening,
             "statistics": statistics,
             "moves": analysis,
         }
